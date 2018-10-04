@@ -15,6 +15,10 @@ var geometry = new THREE.BoxGeometry( 500, 1400, 500 );
 var material = new THREE.MeshLambertMaterial( { color: 0x00ff00 } );
 var cube = new THREE.Mesh( geometry, material );
 cube.position.y = -800;
+let lastCube = cube;
+let curCube = null;
+// hsl的第一个参数
+let curCubeColor = Math.floor(Math.random() * 360);
 scene.add( cube );
 
 hemiLight = new THREE.HemisphereLight( 0xffffff, 0x000000, 1.34 )
@@ -44,7 +48,7 @@ function onTouchStart( event, a) {
 
 function triggerTouchStart(){
 		// update the picking ray with the camera and mouse position
-
+	fixCube();
 	if(true){
 		return;
 	}
@@ -64,7 +68,7 @@ function triggerTouchStart(){
 
 window.addEventListener( 'touchstart', onTouchStart, false );
 
-let floor = 0;
+let floor = -1;
 const CUBE_DEPTH = 500;
 const CUBE_WIDTH = 500;
 const CUBE_HEIGHT = 100;
@@ -74,11 +78,23 @@ let speedRate = 1.0;
 let forward = 1;
 
 function createNewCube(){
-	let geometry = new THREE.BoxGeometry( CUBE_WIDTH, CUBE_HEIGHT, CUBE_DEPTH );
-	let material = new THREE.MeshLambertMaterial( { color: 0xaaff44 } );
+	floor++;
+	let params = lastCube.geometry.parameters;
+	console.log("param = ", params);
+	let geometry = new THREE.BoxGeometry( params.width, CUBE_HEIGHT, params.depth );
+	let material = new THREE.MeshLambertMaterial( { color: new THREE.Color("hsl(" + curCubeColor + ", 55%, 50%)") } );
+	curCubeColor = (curCubeColor + 10) % 360;
 	let cube = new THREE.Mesh( geometry, material );
 	cube.userData = {remove: false};
 	cube.position.y = -100 + (floor + 0.5) * CUBE_HEIGHT;
+	if(floor % 2 == 0){
+		cube.position.x = -MOVE_LENGTH;
+		cube.position.z = lastCube.position.z;
+	}
+	else{
+		cube.position.z = -MOVE_LENGTH;
+		cube.position.x = lastCube.position.x;
+	}
 	scene.add( cube );
 
 	let cubeMove = function(timestamp){
@@ -109,8 +125,42 @@ function createNewCube(){
 			forward = 1;
 		}
 	}
-
+	curCube = cube;
 	cubeMove();
+}
+
+
+/**
+ * @param {上一个cube坐标} lastCube 
+ * @param {当前移动cube坐标} curCube 
+ */
+function fixCube(){
+	let lastParam =  lastCube.geometry.parameters;
+	let lastPos = lastCube.position;
+	let curParam = curCube.geometry.parameters;
+	let curPos = curCube.position;
+	let disX = Math.abs(lastPos.x - curPos.x);
+	let disZ = Math.abs(lastPos.z - curPos.z);
+	let newWidth = (lastParam.width + curParam.width) / 2 - disX;
+	let newDepth = (lastParam.depth + curParam.depth) / 2 - disZ;
+	console.log("newWidth = ", newWidth, newDepth);
+	if(newWidth <= 0 || newDepth <= 0){
+		// todo game over
+		return false;
+	}
+	let newX = (lastPos.x + curPos.x) / 2;
+	let newZ = (lastPos.z + curPos.z) / 2;
+	curCube.geometry.dispose();
+	curCube.geometry = new THREE.BoxGeometry( newWidth, CUBE_HEIGHT, newDepth );
+	curCube.userData.remove = true;
+	curPos.x = newX;
+	curPos.z = newZ;
+	lastCube = curCube;
+
+	camera.position.y += CUBE_HEIGHT;
+
+	createNewCube();
+	console.log(curCube);
 }
 
 function limitValue(minValue, maxValue, value){
@@ -119,10 +169,8 @@ function limitValue(minValue, maxValue, value){
 
 createNewCube();
 
-
 var animate = function () {
 	requestAnimationFrame( animate );
-
 	renderer.render( realScene, camera );
 };
 

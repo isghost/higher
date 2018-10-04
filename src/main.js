@@ -11,14 +11,14 @@ var renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
+let curCubeColor = Math.floor(Math.random() * 360);
 var geometry = new THREE.BoxGeometry( 500, 1400, 500 );
-var material = new THREE.MeshLambertMaterial( { color: 0x00ff00 } );
+var material = new THREE.MeshLambertMaterial( { color: new THREE.Color("hsl(" + curCubeColor + ", 55%, 50%)") } );
 var cube = new THREE.Mesh( geometry, material );
 cube.position.y = -800;
 let lastCube = cube;
 let curCube = null;
 // hsl的第一个参数
-let curCubeColor = Math.floor(Math.random() * 360);
 scene.add( cube );
 
 hemiLight = new THREE.HemisphereLight( 0xffffff, 0x000000, 1.34 )
@@ -81,9 +81,9 @@ function createNewCube(){
 	floor++;
 	let params = lastCube.geometry.parameters;
 	console.log("param = ", params);
-	let geometry = new THREE.BoxGeometry( params.width, CUBE_HEIGHT, params.depth );
-	let material = new THREE.MeshLambertMaterial( { color: new THREE.Color("hsl(" + curCubeColor + ", 55%, 50%)") } );
 	curCubeColor = (curCubeColor + 10) % 360;
+	let geometry = new THREE.BoxGeometry( params.width, CUBE_HEIGHT, params.depth );
+	let material = new THREE.MeshLambertMaterial( { color: new THREE.Color("hsl(" + curCubeColor + ", 65%, 50%)") } );
 	let cube = new THREE.Mesh( geometry, material );
 	cube.userData = {remove: false};
 	cube.position.y = -100 + (floor + 0.5) * CUBE_HEIGHT;
